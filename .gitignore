@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.key
+*.pem
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Superpowers execution workspace (scratch, never committed)
+.superpowers/
