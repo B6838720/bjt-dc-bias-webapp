@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BJT DC Bias Calculator — Voltage Divider</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="hero">
+    <h1>BJT DC Bias Calculator</h1>
+    <p>Common-Emitter · Voltage-Divider Bias · Forward-Active Approximation</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>ข้อมูลอินพุต</h2>
+
+      {% if error %}
+      <div class="error" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="/calculate">
+        <div class="field">
+          <label for="vcc">VCC (V)</label>
+          <input type="number" step="any" id="vcc" name="vcc" value="{{ form.vcc }}" required>
+        </div>
+
+        <div class="field">
+          <label for="r1">R1 (VCC → Base)</label>
+          <input type="number" step="any" id="r1" name="r1" value="{{ form.r1 }}" required>
+        </div>
+
+        <div class="field">
+          <label for="r2">R2 (Base → GND)</label>
+          <input type="number" step="any" id="r2" name="r2" value="{{ form.r2 }}" required>
+        </div>
+
+        <div class="field">
+          <label for="rc">RC (VCC → Collector)</label>
+          <input type="number" step="any" id="rc" name="rc" value="{{ form.rc }}" required>
+        </div>
+
+        <div class="field">
+          <label for="re">RE (Emitter → GND)</label>
+          <input type="number" step="any" id="re" name="re" value="{{ form.re }}" required>
+        </div>
+
+        <div class="field">
+          <label for="r_unit">หน่วยของ R1–RE</label>
+          <select id="r_unit" name="r_unit">
+            <option value="ohm" {% if form.r_unit == 'ohm' %}selected{% endif %}>Ω</option>
+            <option value="kohm" {% if form.r_unit == 'kohm' %}selected{% endif %}>kΩ</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="beta">β (hFE)</label>
+          <input type="number" step="any" id="beta" name="beta" value="{{ form.beta }}" required>
+        </div>
+
+        <div class="field">
+          <label for="vbe">VBE (V)</label>
+          <input type="number" step="any" id="vbe" name="vbe" value="{{ form.vbe }}" required>
+        </div>
+
+        <button type="submit">คำนวณ DC Bias</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>ผลลัพธ์ DC Bias</h2>
+
+      {% if result %}
+        {% if result.region == 'forward_active' %}
+        <p class="badge ok">✅ Forward Active — ใช้แบบจำลองได้</p>
+        {% elif result.region == 'cutoff' %}
+        <p class="badge warn">⚠️ Cutoff — ทรานซิสเตอร์ไม่นำกระแส</p>
+        {% else %}
+        <p class="badge warn">⚠️ Saturation — ไม่อยู่ใน Forward Active</p>
+        {% endif %}
+
+        <dl class="results">
+          <div><dt>VB</dt><dd>{{ result.vb|voltage }}</dd></div>
+          <div><dt>VE</dt><dd>{{ result.ve|voltage }}</dd></div>
+          <div><dt>VC</dt><dd>{{ result.vc|voltage }}</dd></div>
+          <div><dt>VCE</dt><dd>{{ result.vce|voltage }}</dd></div>
+          <div><dt>IC</dt><dd>{{ result.ic|current }}</dd></div>
+          <div><dt>IB</dt><dd>{{ result.ib|current }}</dd></div>
+          <div><dt>IE</dt><dd>{{ result.ie|current }}</dd></div>
+        </dl>
+
+        <h3>พารามิเตอร์ภายใน</h3>
+        <dl class="results small">
+          <div><dt>VTH</dt><dd>{{ result.vth|voltage }}</dd></div>
+          <div><dt>RTH</dt><dd>{{ "%.0f"|format(result.rth) }} Ω</dd></div>
+        </dl>
+
+        {% if result.warnings %}
+        <ul class="warning">
+          {% for message in result.warnings %}
+          <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      {% else %}
+        <p class="muted">กรอกค่าแล้วกด “คำนวณ DC Bias” เพื่อดูผลลัพธ์</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
