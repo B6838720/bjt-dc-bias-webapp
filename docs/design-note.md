@@ -132,4 +132,6 @@ Template ใช้ filter `|voltage` และ `|current` ที่ลงทะ�
 - `β` และ `VBE` คงที่ ไม่ขึ้นกับอุณหภูมิ/กระแส
 - ไม่มี Early effect (`VA`)
 - Saturation เป็นเพียงการเตือน — ยังแสดงค่าจากสมการเดิม
+- ใช้สมการ **exact** ที่คิด `RTH` ตามใบงาน ไม่ใช่ approximate analysis
+  (`β·RE ≥ 10·R2` ไม่ผ่านสำหรับค่าอ้างอิง: 100 kΩ < 220 kΩ)
 - ไม่มี persistence, authentication, หรือ API แบบ JSON
