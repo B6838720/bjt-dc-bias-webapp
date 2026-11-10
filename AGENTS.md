@@ -72,7 +72,7 @@ calculate(vcc, r1, r2, rc, re, beta, vbe) -> dict
 python -m unittest discover -s tests -v
 ```
 
-ต้องได้ **15 tests, OK** (หรือมากกว่า ถ้าเพิ่ม test ใหม่)
+ต้องได้ **16 tests, OK** (หรือมากกว่า ถ้าเพิ่ม test ใหม่)
 
 ตรวจว่าไม่มีไฟล์ขยะติดไป:
 

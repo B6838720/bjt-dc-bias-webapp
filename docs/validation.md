@@ -61,6 +61,7 @@
 ## 4. ผลรัน Test Suite
 
 ```
+test_ic_increases_with_beta (test_dc_bias.TestReferenceOperatingPoint.test_ic_increases_with_beta) ... ok
 test_reference_operating_point (test_dc_bias.TestReferenceOperatingPoint.test_reference_operating_point) ... ok
 test_cutoff_reports_physical_values (test_dc_bias.TestRegions.test_cutoff_reports_physical_values) ... ok
 test_fractional_beta_accepted (test_dc_bias.TestRegions.test_fractional_beta_accepted) ... ok
@@ -78,7 +79,7 @@ test_non_numeric_shows_error (test_web.TestCalculateRoute.test_non_numeric_shows
 test_index_returns_form (test_web.TestIndexPage.test_index_returns_form) ... ok
 
 ----------------------------------------------------------------------
-Ran 15 tests in 0.091s
+Ran 16 tests in 0.085s
 
 OK
 ```
@@ -94,7 +95,7 @@ OK
 | **A3** Engineering Reference | ค่าตรงกับ independent calculation | ตารางข้อ 2 + `test_reference_operating_point` | ✅ |
 | **A4** Validation | อินพุตผิดได้ข้อความไทย ไม่ 500 | `test_non_numeric_shows_error`, `test_empty_field_shows_error`, `test_invalid_resistor_shows_error` + HTTP case 2 | ✅ |
 | **A5** Outside Active Region | มี warning/ป้าย region | `test_cutoff_reports_physical_values`, `test_cutoff_shows_zero_current`, `test_saturation_detected` + HTTP case 3 | ✅ |
-| **A6** Unit + HTTP Tests | มีทั้ง unit และ HTTP test | `tests/test_dc_bias.py` 9 เคส, `tests/test_web.py` 6 เคส | ✅ |
+| **A6** Unit + HTTP Tests | มีทั้ง unit และ HTTP test | `tests/test_dc_bias.py` 10 เคส, `tests/test_web.py` 6 เคส | ✅ |
 | **A7** Reproducibility | clone → install → run → test ได้ | `README.md`, `requirements.txt`, `.gitignore`; `.venv/` และ `__pycache__/` ไม่ถูก track | ✅ |
 
 ---
@@ -115,14 +116,14 @@ OK
 | A4 | `R1 = R2 = 1e308` → 200 + "ไม่สมเหตุสมผล" (ไม่ 500) | ✅ 200, ข้อความถูก |
 | A5 | `R2 = 5` → Cutoff + `0.000 mA` + warning | ✅ ครบ |
 | A5 | `RC = 100` → Saturation + warning | ✅ ครบ |
-| A6 | `test_dc_bias.py` 9 เคส + `test_web.py` 6 เคส | ✅ 15 เคส |
+| A6 | `test_dc_bias.py` 10 เคส + `test_web.py` 6 เคส | ✅ 16 เคส |
 | A7 | `git ls-files` ไม่มี `.venv/`, `__pycache__`, `.pyc`, `.superpowers/` | ✅ ไม่มี |
 | A7 | `git status --short` สะอาด | ✅ ว่าง |
 
 **ผลรัน test รอบสุดท้าย:**
 
 ```
-Ran 15 tests in 0.050s
+Ran 16 tests in 0.050s
 
 OK
 ```

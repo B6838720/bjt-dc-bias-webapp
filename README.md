@@ -80,7 +80,7 @@ python -m flask --app app run --debug
 python -m unittest discover -s tests -v
 ```
 
-ผลที่คาดหวัง: **15 tests, OK** (unit 9 + HTTP 6)
+ผลที่คาดหวัง: **16 tests, OK** (unit 10 + HTTP 6)
 
 ---
 

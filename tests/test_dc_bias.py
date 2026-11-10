@@ -29,6 +29,12 @@ class TestReferenceOperatingPoint(unittest.TestCase):
         self.assertTrue(r["model_applies"])
         self.assertEqual(r["warnings"], [])
 
+    def test_ic_increases_with_beta(self):
+        # Spec 6.7 item 2: monotonic sanity independent of the reference numbers.
+        low = calculate(**dict(REFERENCE, beta=50.0))
+        high = calculate(**dict(REFERENCE, beta=200.0))
+        self.assertGreater(high["ic"], low["ic"])
+
 
 class TestValidation(unittest.TestCase):
     def test_zero_resistor_rejected(self):

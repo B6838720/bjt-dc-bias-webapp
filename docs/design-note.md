@@ -119,10 +119,10 @@ Template ใช้ filter `|voltage` และ `|current` ที่ลงทะ�
 
 | ไฟล์ | จำนวน | ครอบอะไร |
 |---|---|---|
-| `tests/test_dc_bias.py` | 9 | ค่าอ้างอิง, validation, region, Cutoff physical values, β ทศนิยม |
+| `tests/test_dc_bias.py` | 10 | ค่าอ้างอิง, monotonic β, validation, region, Cutoff physical values, β ทศนิยม |
 | `tests/test_web.py` | 6 | `GET /`, `POST /calculate` (ค่าจริง, error, ค่าว่าง, Cutoff) |
 
-รันด้วย `python -m unittest discover -s tests -v` → **15 tests, OK**
+รันด้วย `python -m unittest discover -s tests -v` → **16 tests, OK**
 
 ---
 
