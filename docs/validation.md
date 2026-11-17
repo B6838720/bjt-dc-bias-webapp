@@ -197,3 +197,61 @@ OK
 - ภาพหน้าจอกรณี A5 (ข้อความ error + ไม่มีผลค้าง): `docs/evidence/lab03-a5-fixed-rb0.jpeg`
 - ไฟล์ที่แนบในแชท (`image.png`) อ่านเนื้อหาไม่ได้จากโมเดลนี้ จึงยังไม่สามารถสรุปการสาธิตเชื่อม Playwright MCP ในภาพได้; ต้องให้เจ้าของงานพิมพ์ข้อความมาเพิ่มหากต้องการส่วนคะแนนนั้น
 - ทุกค่าที่รายงานข้างต้นอ่านจาก accessibility snapshot ของหน้าเว็บจริงหลังกดปุ่ม ไม่ได้อ่านจากโค้ดหรือ unit test
+
+---
+
+## 10. คำถามปิด Lab
+
+**คำถาม:** ถ้าตัวเลขคำนวณมือถูก แต่เปลี่ยน R<sub>E</sub> แล้วผลบนหน้าเว็บไม่เปลี่ยน
+คุณจะตรวจค่าที่ส่งจากฟอร์มและค่าที่เข้าไปในฟังก์ชันอย่างไร?
+
+**คำตอบ — ไล่ตรวจ 6 ชั้นจากหน้าเว็บเข้าไปถึงสมการ:**
+
+1. **ยืนยันโหมดก่อน (สาเหตุที่พบบ่อยสุด):** ดูข้อความ `Common-Emitter · Emitter Bias …` และ hidden input
+   `<input type="hidden" name="mode" value="{{ mode }}">` (`templates/index.html:37`) ต้องเป็น `emitter`
+   ถ้าเป็น `fixed` ช่อง R<sub>E</sub> จะไม่ถูก render (`templates/index.html:67` แสดงเฉพาะ divider/emitter)
+   และ `MODE_FIELDS[fixed]` (`app.py:21`) ไม่มี `re` → เปลี่ยน R<sub>E</sub> ไม่มีทางเปลี่ยนผล
+   ตรวจใน browser ได้ด้วย `evaluate`: อ่าน `document.querySelector('input[name="mode"]').value`
+
+2. **อ่านค่าจริงในช่องฟอร์มหลังกดคำนวณ:** ใช้ snapshot / `evaluate` อ่าน `input[name="re"]`
+   ว่าขึ้น `2` หรือยังค้าง `1` (รอบ A4 ที่ตรวจจริงได้ `{"mode":"emitter","vcc":"12","rb":"1000",
+   "rc":"2.2","re":"2","beta":"100","vbe":"0.70","r_unit":"kohm"}`) ถ้ายังเป็นค่เก่า แปลว่ากรอกผิดช่อง
+   หรือหน้า render ใหม่จาก `DEFAULT_FORM`
+
+3. **ดู POST body ที่ส่งจริง:** ใช้ `network.list` (urlContains `calculate`) → `network.get`
+   (includeBody) ดูว่ามี `re=2` หรือ `re=1` ถ้า body ถูกแต่ผลไม่เปลี่ยน → ปัญหาฝั่ง Flask
+   ถ้า body ผิด → ปัญหาอยู่ที่ `name` ของ input ใน template
+
+4. **ตามเข้า Flask:** `app.py:101` เก็บ `request.form` ลง `form`; `_parse_form()` (`app.py:67–84`)
+   ทำ `.strip()` → `float()` → คูณ 1000 เฉพาะ `RESISTOR_FIELDS` เมื่อ `r_unit=kohm`
+   → `values["re"]` ต้องเป็น `2000.0` Ω ใส่ `print`/logging ชั่วคราวตรงนี้เพื่อดู `mode`, `form`,
+   `values`, `values["re"]` ถ้ายังเป็น 1000 แปลว่า parse ผิดหรือโหมดผิด
+
+5. **ตามเข้า function และสมการ:** ดู dispatch `app.py:111–113` ต้องส่ง `re=values["re"]` เข้า
+   `calculate_emitter()` และ `dc_bias.py:143` ต้องเป็น `ib = (vcc - vbe) / (rb + (beta + 1) * re)`
+   (R<sub>E</sub> อยู่ในตัวหาร) วิธีแยกปัญหาเร็ว: เรียก `calculate_emitter()` จาก Python โดยตรงสองรอบ
+   `re=1000` กับ `re=2000` ถ้าผลต่าง → สมการถูก ปัญหาอยู่ที่ชั้นฟอร์ม–parse–dispatch
+   ถ้าผลเท่ากัน → บั๊กอยู่ใน `dc_bias.py` (เช่น hardcode `re` หรือใช้ `rc` แทน)
+
+6. **เช็คชั้นแสดงผลและใช้ test ช่วยตัดสิน:** `templates/index.html:112–113` ต้อง render
+   `result.vce|voltage` และ `result.ic|current` ไม่ใช่ตัวเลข hardcode (`test_calculate_shows_backend_results`
+   การันตีอยู่); `test_larger_re_reduces_ic` (`tests/test_dc_bias.py:118`) พิสูจน์ว่าฟังก์ชันตอบสนองต่อ
+   R<sub>E</sub>, `test_emitter_mode_uses_re` (`tests/test_web.py`) พิสูจน์ว่า POST ผ่านเว็บส่งค่าเข้า
+   สมการ ถ้า unit test ผ่านแต่ web test พัง → โฟกัส `app.py`/template; ถ้าทั้งคู่ผ่านแต่หน้าเว็บยังไม่เปลี่ยน
+   → ถอยไปดู snapshot ใหม่ว่ากำลังอ่านผลรอบเก่าอยู่หรือไม่
+
+**เส้นทางข้อมูล R<sub>E</sub> ใน A4 ของโปรเจกต์นี้ (ตอบข้อ 135–160 ด้วย):**
+
+```
+input#re (templates/index.html:70)  --POST re=2-->
+app.py:101 form["re"]  -->  _parse_form() app.py:84  values["re"] = 2 × 1000 = 2000.0 Ω
+-->  app.py:113 calculate_emitter(re=values["re"])
+-->  dc_bias.py:143 ib = (12 − 0.70) / (1e6 + 101 × 2000) = 9.401 µA
+-->  _summarize() ic = β·ib = 0.9401 mA
+-->  templates/index.html:113 result.ic|current
+-->  snapshot จริง: IC = 940.10 µA (ลดจาก A3 ที่ 1.026 mA)
+```
+
+**สรุปสั้น:** ไล่ตามลำดับ โหมด → ค่าใน input → POST body → `request.form`/`values["re"]` →
+argument ของ `calculate_emitter()` → ตัวหาร `(β+1)R<sub>E</sub>` → `result.ic`/`result.vce` ที่แสดง
+จุดที่ค่าหายหรือถูกแทนที่คือจุดที่ต้องแก้
