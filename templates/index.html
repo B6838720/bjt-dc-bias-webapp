@@ -90,11 +90,13 @@
           <div><dt>IE</dt><dd>{{ result.ie|current }}</dd></div>
         </dl>
 
+        {% if result.vth is not none %}
         <h3>พารามิเตอร์ภายใน</h3>
         <dl class="results small">
           <div><dt>VTH</dt><dd>{{ result.vth|voltage }}</dd></div>
           <div><dt>RTH</dt><dd>{{ "%.0f"|format(result.rth) }} Ω</dd></div>
         </dl>
+        {% endif %}
 
         {% if result.warnings %}
         <ul class="warning">

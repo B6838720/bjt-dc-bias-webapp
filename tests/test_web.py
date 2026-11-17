@@ -59,3 +59,37 @@ class TestCalculateRoute(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn("Cutoff", body)
         self.assertIn("0.000 mA", body)
+
+    def test_divider_mode_keeps_old_result(self):
+        response = self.client.post("/calculate", data=dict(REFERENCE_FORM, mode="divider"))
+        body = response.get_data(as_text=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("1.230", body)
+        self.assertIn("8.052", body)
+
+    def test_fixed_mode_uses_fixed_formula(self):
+        data = {"mode": "fixed", "vcc": "12", "rb": "1000", "rc": "2.2",
+                "beta": "100", "vbe": "0.70", "r_unit": "kohm"}
+        body = self.client.post("/calculate", data=data).get_data(as_text=True)
+        self.assertIn("1.130", body)
+        self.assertIn("9.514", body)
+
+    def test_emitter_mode_uses_re(self):
+        data = {"mode": "emitter", "vcc": "12", "rb": "1000", "rc": "2.2",
+                "re": "1", "beta": "100", "vbe": "0.70", "r_unit": "kohm"}
+        body = self.client.post("/calculate", data=data).get_data(as_text=True)
+        self.assertIn("1.026", body)
+        self.assertIn("8.705", body)
+
+    def test_unknown_mode_is_error(self):
+        data = dict(REFERENCE_FORM, mode="bogus")
+        body = self.client.post("/calculate", data=data).get_data(as_text=True)
+        self.assertIn("โหมดไม่รู้จัก", body)
+        self.assertNotIn("1.230", body)
+
+    def test_zero_rb_error_has_no_stale_result(self):
+        data = {"mode": "fixed", "vcc": "12", "rb": "0", "rc": "2.2",
+                "beta": "100", "vbe": "0.70", "r_unit": "kohm"}
+        body = self.client.post("/calculate", data=data).get_data(as_text=True)
+        self.assertIn("RB ต้องมากกว่า 0", body)
+        self.assertNotIn("9.514", body)
