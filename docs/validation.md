@@ -164,3 +164,36 @@ OK
 **ข้อสรุป:** สมการ exact ที่คิด `RTH` คือสมการอ้างอิงในใบงาน
 (`IB = (VTH−VBE)/(RTH+(β+1)RE)`) โปรเจกต์นี้จึงคงผล `IC = 1.230 mA`
 และไม่ปรับให้ตรงกับ approximate
+
+---
+
+## 9. Lab 03 — Acceptance A1–A5 (2026-11-17)
+
+### 9.1 วิธีตรวจและเกณฑ์ตัดสิน
+
+| รายการ | ค่า |
+|---|---|
+| เครื่องมือที่ใช้จริง | **OpenCode Browser** (`tabs.open`, `snapshot`, `fill_form`, `select`, `evaluate`, `screenshot`) ผ่าน `http://127.0.0.1:5000/` |
+| Playwright MCP | `NOT RUN` — ไม่พบ MCP resource ชื่อ `playwright` และไม่มี `opencode.json` / `opencode.jsonc` ในโปรเจกต์; ใช้ OpenCode Browser แทนตามข้อ 3 ของใบงาน (ให้คะแนนการตรวจผลเท่ากัน) |
+| ค่าใช้ร่วม A1–A5 | `VCC = 12 V`, `RC = 2.2 kΩ`, `β = 100`, `VBE = 0.70 V`, หน่วยตัวต้านทาน `kΩ` |
+| Tolerance | `|ΔIC| ≤ 0.01 mA`, `|ΔVCE| ≤ 0.02 V` เมื่อเทียบกับค่าอ้างอิงที่ยังไม่ปัดเศษ |
+| ค่าอ้างอิงอิสระ | A1 `1.2299 mA / 8.0522 V`; A2 `1.1300 mA / 9.5140 V`; A3 `1.0263 mA / 8.7054 V`; A4 `0.9401 mA / 8.0328 V` (คำนวณจากสมการใน design note ไม่ได้ import โค้ดที่กำลังทดสอบ) |
+
+### 9.2 ตารางผล A1–A5
+
+| ID | วิธีตรวจ | อินพุต | ค่าคาดหมาย | ผลจริงพร้อมหน่วย | สถานะ | หลักฐาน |
+|---|---|---|---|---|---|---|
+| **A1 · โหมดเดิม** | OpenCode Browser: กรอกฟอร์ม Divider → กด `คำนวณ DC Bias` → อ่าน snapshot | Divider · `R1=100 kΩ, R2=22 kΩ, RE=1 kΩ` | ตรง baseline Lab 2: `IC 1.230 mA`, `VCE 8.052 V` | `IC = 1.230 mA`, `VCE = 8.052 V`, `VB 1.942 V`, `VE 1.242 V`, `VC 9.294 V`, `IB 12.30 µA`, `IE 1.242 mA`, `VTH 2.164 V`, `RTH 18,033 Ω`, `Forward Active` (ΔIC 0.0001 mA, ΔVCE 0.0002 V) | **PASS** | snapshot หลัง POST: `[definition] "1.230 mA"` / `"8.052 V"`; `docs/lab03-baseline.md` |
+| **A2 · Fixed** | OpenCode Browser: `select mode=fixed` → `เปลี่ยนโหมด` → กรอกฟอร์ม → snapshot | Fixed · `RB=1 MΩ` (กรอก `1000` kΩ), **ไม่มีช่อง RE** | คำนวณได้โดยไม่กรอก RE: `IC 1.1300 mA`, `VCE 9.5140 V` | `IC = 1.130 mA`, `VCE = 9.514 V`, `VB 0.700 V`, `VE 0.000 V`, `IB 11.30 µA`, `Forward Active` (ΔIC 0.0000 mA, ΔVCE 0.0000 V) | **PASS** | snapshot แสดงเฉพาะ `VCC, RB, RC, หน่วย, β, VBE` (ไม่มี `name="r1"` / `name="re"`) และผล `1.130 mA` / `9.514 V` |
+| **A3 · Emitter** | OpenCode Browser: `select mode=emitter` → กรอกฟอร์ม → snapshot | Emitter · `RB=1 MΩ`, `RE=1 kΩ` | มีช่อง RE และใช้ค่า RE: `IC 1.0263 mA`, `VCE 8.7054 V` | `IC = 1.026 mA`, `VCE = 8.705 V`, `VB 1.737 V`, `VE 1.037 V`, `IB 10.26 µA`, `Forward Active` (ΔIC 0.0003 mA, ΔVCE 0.0004 V) | **PASS** | snapshot แสดง `RE (Emitter → GND)` และผล `1.026 mA` / `8.705 V` |
+| **A4 · เปลี่ยนค่าเดียว** | OpenCode Browser: แก้ **เฉพาะ RE** จาก `1` เป็น `2` → กดคำนวณ → snapshot + `evaluate` อ่านค่าฟอร์ม | Emitter · เหมือน A3 แต่ `RE=2 kΩ` | **ทำนายก่อนรัน:** IC ต้อง *ลด* เพราะ `IB=(VCC−VBE)/(RB+(β+1)RE)` → RE เพิ่ม → ตัวหารเพิ่ม → IB ลด → IC ลด; ผลอ้างอิง `IC 0.9401 mA`, `VCE 8.0328 V` | `IC = 940.10 µA = 0.9401 mA`, `VCE = 8.033 V`, `VE 1.899 V`, `VB 2.599 V` → **ลดจาก A3 จริง** (1.026 → 0.9401 mA, ΔVCE 0.0002 V) | **PASS** | `evaluate` ของฟอร์มหลัง POST: `{"mode":"emitter","vcc":"12","rb":"1000","rc":"2.2","re":"2","beta":"100","vbe":"0.70","r_unit":"kohm"}` → โหมดยัง emitter และทุกค่าอื่นเท่าเดิม มีแค่ RE เปลี่ยน |
+| **A5 · อินพุตผิด** | OpenCode Browser: Fixed · คำนวณ `RB=1000` สำเร็จก่อน (มีผลเก่า) → เปลี่ยน `RB=0` → คำนวณ → snapshot + console | Fixed · `RB=0` | มีข้อความให้แก้ RB, เว็บไม่ล่ม (ไม่ 500), และ **ไม่แสดงผล 1.130 mA / 9.514 V ของรอบก่อน** | แจ้ง `"ค่า RB ต้องมากกว่า 0"` (role=alert); ผลลัพธ์เป็นข้อความเริ่มต้น `"กรอกค่าแล้วกด คำนวณ DC Bias ..."` ไม่มี `1.130 mA` / `9.514 V`; console error = 0; HTTP 200 | **PASS** | snapshot หลัง POST; ภาพ `docs/evidence/lab03-a5-fixed-rb0.jpeg`; `test_zero_rb_error_has_no_stale_result` |
+
+**ที่มาของข้อความ A5:** ข้อความ `"ค่า RB ต้องมากกว่า 0"` มาจาก **Flask** (`dc_bias._validate_common` → `ValueError` → route ส่งกลับพร้อม `result=None`) ไม่ใช่ข้อจำกัดจาก HTML — ฟอร์มใช้ `type="number"` ซึ่งยอมรับ `0` ได้ (`required` กันเฉพาะช่องว่าง) จึงพิสูจน์ว่ามีการตรวจอินพุตฝั่ง Flask จริงตามที่ใบงานต้องการ
+
+### 9.3 หลักฐานเพิ่มเติม
+
+- ผลรัน test หลัง implement ครบทั้ง 3 โหมด: `.venv\Scripts\python.exe -m unittest discover -s tests -v` → **Ran 29 tests — OK**
+- ภาพหน้าจอกรณี A5 (ข้อความ error + ไม่มีผลค้าง): `docs/evidence/lab03-a5-fixed-rb0.jpeg`
+- ไฟล์ที่แนบในแชท (`image.png`) อ่านเนื้อหาไม่ได้จากโมเดลนี้ จึงยังไม่สามารถสรุปการสาธิตเชื่อม Playwright MCP ในภาพได้; ต้องให้เจ้าของงานพิมพ์ข้อความมาเพิ่มหากต้องการส่วนคะแนนนั้น
+- ทุกค่าที่รายงานข้างต้นอ่านจาก accessibility snapshot ของหน้าเว็บจริงหลังกดปุ่ม ไม่ได้อ่านจากโค้ดหรือ unit test
