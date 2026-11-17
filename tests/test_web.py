@@ -93,3 +93,19 @@ class TestCalculateRoute(unittest.TestCase):
         body = self.client.post("/calculate", data=data).get_data(as_text=True)
         self.assertIn("RB ต้องมากกว่า 0", body)
         self.assertNotIn("9.514", body)
+
+    def test_index_has_mode_selector(self):
+        body = self.client.get("/").get_data(as_text=True)
+        self.assertIn('name="mode"', body)
+        self.assertIn("เปลี่ยนโหมด", body)
+
+    def test_get_fixed_mode_hides_divider_fields(self):
+        body = self.client.get("/?mode=fixed").get_data(as_text=True)
+        self.assertIn('name="rb"', body)
+        self.assertNotIn('name="r1"', body)
+        self.assertNotIn('name="re"', body)
+
+    def test_get_emitter_mode_shows_re(self):
+        body = self.client.get("/?mode=emitter").get_data(as_text=True)
+        self.assertIn('name="rb"', body)
+        self.assertIn('name="re"', body)

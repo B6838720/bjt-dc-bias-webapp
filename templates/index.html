@@ -3,51 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BJT DC Bias Calculator — Voltage Divider</title>
+  <title>BJT DC Bias Calculator — {{ mode }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+  {% set mode_name = {'divider': 'Voltage Divider Bias', 'fixed': 'Fixed Bias', 'emitter': 'Emitter Bias'}.get(mode, mode) %}
   <header class="hero">
     <h1>BJT DC Bias Calculator</h1>
-    <p>Common-Emitter · Voltage-Divider Bias · Forward-Active Approximation</p>
+    <p>Common-Emitter · {{ mode_name }} · Forward-Active Approximation</p>
   </header>
 
   <main class="layout">
     <section class="panel">
       <h2>ข้อมูลอินพุต</h2>
 
+      <form class="mode-bar" method="get" action="/">
+        <div class="field">
+          <label for="mode">เลือกวงจรไบอัส</label>
+          <select id="mode" name="mode">
+            <option value="divider" {% if mode == 'divider' %}selected{% endif %}>Voltage Divider Bias</option>
+            <option value="fixed" {% if mode == 'fixed' %}selected{% endif %}>Fixed Bias</option>
+            <option value="emitter" {% if mode == 'emitter' %}selected{% endif %}>Emitter Bias</option>
+          </select>
+        </div>
+        <button type="submit">เปลี่ยนโหมด</button>
+      </form>
+
       {% if error %}
       <div class="error" role="alert">{{ error }}</div>
       {% endif %}
 
       <form method="post" action="/calculate">
+        <input type="hidden" name="mode" value="{{ mode }}">
+
         <div class="field">
           <label for="vcc">VCC (V)</label>
           <input type="number" step="any" id="vcc" name="vcc" value="{{ form.vcc }}" required>
         </div>
 
+        {% if mode == 'divider' %}
         <div class="field">
           <label for="r1">R1 (VCC → Base)</label>
           <input type="number" step="any" id="r1" name="r1" value="{{ form.r1 }}" required>
         </div>
-
         <div class="field">
           <label for="r2">R2 (Base → GND)</label>
           <input type="number" step="any" id="r2" name="r2" value="{{ form.r2 }}" required>
         </div>
+        {% endif %}
+
+        {% if mode == 'fixed' or mode == 'emitter' %}
+        <div class="field">
+          <label for="rb">RB (VCC → Base)</label>
+          <input type="number" step="any" id="rb" name="rb" value="{{ form.rb }}" required>
+        </div>
+        {% endif %}
 
         <div class="field">
           <label for="rc">RC (VCC → Collector)</label>
           <input type="number" step="any" id="rc" name="rc" value="{{ form.rc }}" required>
         </div>
 
+        {% if mode == 'divider' or mode == 'emitter' %}
         <div class="field">
           <label for="re">RE (Emitter → GND)</label>
           <input type="number" step="any" id="re" name="re" value="{{ form.re }}" required>
         </div>
+        {% endif %}
 
         <div class="field">
-          <label for="r_unit">หน่วยของ R1–RE</label>
+          <label for="r_unit">หน่วยของตัวต้านทาน</label>
           <select id="r_unit" name="r_unit">
             <option value="ohm" {% if form.r_unit == 'ohm' %}selected{% endif %}>Ω</option>
             <option value="kohm" {% if form.r_unit == 'kohm' %}selected{% endif %}>kΩ</option>
@@ -69,9 +94,9 @@
     </section>
 
     <section class="panel">
-      <h2>ผลลัพธ์ DC Bias</h2>
+      <h2>ผลลัพธ์ DC Bias · {{ mode_name }}</h2>
 
-      {% if result %}
+      {% if result and not error %}
         {% if result.region == 'forward_active' %}
         <p class="badge ok">✅ Forward Active — ใช้แบบจำลองได้</p>
         {% elif result.region == 'cutoff' %}
@@ -106,7 +131,7 @@
         </ul>
         {% endif %}
       {% else %}
-        <p class="muted">กรอกค่าแล้วกด “คำนวณ DC Bias” เพื่อดูผลลัพธ์</p>
+        <p class="muted">กรอกค่าแล้วกด “คำนวณ DC Bias” เพื่อดูผลลัพธ์ของ{{ mode_name }}</p>
       {% endif %}
     </section>
   </main>
