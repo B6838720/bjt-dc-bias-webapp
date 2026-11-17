@@ -1,10 +1,17 @@
 # BJT DC Bias Web App
 
-Flask Web Application สำหรับคำนวณ **DC Operating Point** ของวงจรขยาย BJT
-แบบ Common-Emitter, **Voltage-Divider Bias** โดยรับค่า `VCC, R1, R2, RC, RE, β, VBE`
+Flask Web Application สำหรับคำนวณ **DC Operating Point** ของวงจรขยาย BJT แบบ Common-Emitter
 ผ่านหน้าเว็บ แล้วให้ Python Backend คำนวณและส่งผลกลับมาแสดงใน Browser
 
-> ขอบเขต Week 2: **DC Bias เท่านั้น** — ไม่มี AC analysis, Bode plot, Transient, Signal Generator หรือ SPICE solver
+รองรับ **3 โหมดไบอัส** (เลือกจาก dropdown `เลือกวงจรไบอัส` แล้วกด `เปลี่ยนโหมด`):
+
+| โหมด | ช่องที่ใช้ |
+|---|---|
+| `divider` — Voltage Divider Bias (ค่าเริ่มต้น, ผลตรง Lab 2 ทุกประการ) | `VCC, R1, R2, RC, RE, β, VBE` |
+| `fixed` — Fixed Bias (emitter ต่อ GND, ไม่มีช่อง `RE`) | `VCC, RB, RC, β, VBE` |
+| `emitter` — Emitter Bias (RB + RE) | `VCC, RB, RC, RE, β, VBE` |
+
+> ขอบเขต Week 2–3: **DC Bias เท่านั้น** — ไม่มี AC analysis, Bode plot, Transient, Signal Generator หรือ SPICE solver
 
 ---
 
@@ -25,6 +32,15 @@ VCE = VC − VE
 หน่วยภายในของ `dc_bias.calculate()` คือ **Ω, V, A** (SI) — แปลงเป็น mA/µA
 ที่ชั้นแสดงผลเท่านั้น
 
+สมการของโหมดที่เพิ่มใน Lab 03 (ทั้งสองใช้ `_summarize()` ร่วมกับ `calculate()`):
+
+```
+Fixed:    IB = (VCC − VBE) / RB                     , VE = 0
+Emitter:  IB = (VCC − VBE) / (RB + (β + 1)·RE)
+          IC = β·IB, IE = (β+1)·IB, VE = IE·RE, VB = VE + VBE
+          VC = VCC − IC·RC, VCE = VC − VE
+```
+
 ### ค่าอ้างอิงสำหรับตรวจ
 
 `VCC=12 V, R1=100 kΩ, R2=22 kΩ, RC=2.2 kΩ, RE=1 kΩ, β=100, VBE=0.70 V`
@@ -41,6 +57,14 @@ VCE = VC − VE
 | VC | 9.294 V |
 | VCE | 8.052 V |
 | Region | Forward Active |
+
+ค่าอ้างอิงโหมดใหม่ (ใช้ค่าร่วม `VCC=12 V, RC=2.2 kΩ, β=100, VBE=0.70 V`):
+
+| โหมด | อินพุตเพิ่ม | IC | VCE |
+|---|---|---|---|
+| Fixed | `RB = 1 MΩ` | 1.130 mA | 9.514 V |
+| Emitter | `RB = 1 MΩ, RE = 1 kΩ` | 1.026 mA | 8.705 V |
+| Emitter | `RB = 1 MΩ, RE = 2 kΩ` | 0.940 mA | 8.033 V (IC ลดลง) |
 
 ---
 
@@ -80,7 +104,13 @@ python -m flask --app app run --debug
 python -m unittest discover -s tests -v
 ```
 
-ผลที่คาดหวัง: **16 tests, OK** (unit 10 + HTTP 6)
+ผลที่คาดหวังหลัง Lab 03: **29 tests, OK** (unit 15 + HTTP 14)
+
+```powershell
+# ตรวจว่า remote ตรงกับ repo ของงาน
+git remote -v
+git log --oneline -5
+```
 
 ---
 
@@ -104,6 +134,9 @@ Validation แบ่งเป็น 2 ชั้น:
 - **`dc_bias.calculate()`** — รับ float เท่านั้น และ raise `ValueError` เมื่อ
   `VCC ≤ 0`, `R1/R2/RC/RE ≤ 0`, `β ≤ 0`, `VBE ≤ 0`, `VBE ≥ VCC`, `R1 + R2 ≤ 0`
   หรือผลลัพธ์เป็น `inf`/`nan`
+- **`dc_bias.calculate_fixed()` / `calculate_emitter()`** — ใช้ `_validate_common()`
+  ร่วมกัน และตรวจ `RB ≤ 0` / `RE ≤ 0` เพิ่มเติม; เมื่อ `IB ≤ 0` จะเพิ่ม warning
+  ว่าแบบจำลอง Forward Active อาจใช้ไม่ได้; โหมด `bogus` ได้ error ไทย ไม่ fallback เป็น Divider
 
 ---
 
@@ -139,7 +172,7 @@ IC ≈ IE
 
 ---
 
-## 8. ขอบเขต Week 2 (สิ่งที่ยังไม่ทำ)
+## 8. ขอบเขต Week 2–3 (สิ่งที่ยังไม่ทำ)
 
 - ❌ AC / Small-signal analysis
 - ❌ Bode plot / Frequency response
@@ -152,7 +185,21 @@ IC ≈ IE
 
 ## 9. เอกสารเพิ่มเติม
 
-- `docs/design-note.md` — สถาปัตยกรรมและเหตุผลการแยกชั้น
-- `docs/validation.md` — ตารางเทียบค่า + หลักฐานการทดสอบ A1–A7
-- `docs/reflection.md` — คำตอบคำถามรายบุคคลในใบงาน
-- `docs/superpowers/specs/2026-11-10-bjt-dc-bias-webapp-design.md` — design ฉบับเต็ม
+- `docs/design-note.md` — สถาปัตยกรรมและเหตุผลการแยกชั้น (Lab 2)
+- `docs/validation.md` — ข้อ 2–8: หลักฐาน Lab 2 (A1–A7); **ข้อ 9: ตาราง A1–A5 ของ Lab 03**; **ข้อ 10: คำถามปิด Lab**
+- `docs/reflection.md` — คำตอบคำถามรายบุคคลในใบงาน (Lab 2)
+- `docs/lab03-baseline.md` — ผล Voltage Divider ก่อนเพิ่ม 2 โหมด (baseline Lab 03)
+- `docs/evidence/lab03-a5-fixed-rb0.jpeg` — หลักฐานหน้าเว็บกรณี A5 (RB=0)
+- `docs/superpowers/specs/2026-11-10-bjt-dc-bias-webapp-design.md` — design Lab 2 ฉบับเต็ม
+- `docs/superpowers/specs/2026-11-17-lab03-three-bias-modes-design.md` — design note Lab 03
+- `docs/superpowers/plans/2026-11-17-lab03-three-bias-modes.md` — plan Lab 03
+
+---
+
+## 10. ที่มาและ Commit ของ Lab 03
+
+- Repository: <https://github.com/B6838720/bjt-dc-bias-webapp>
+- วิธีตรวจซ้ำ: รันตามข้อ 3 → เปิดเว็บ → เลือกโหมด → กรอกค่าตามตารางข้อ 1 → กด `คำนวณ DC Bias`
+- ผลจริงจาก Browser (A1–A5 ผ่านทั้ง 5 กรณี) อยู่ใน `docs/validation.md` ข้อ 9
+- ประวัติ Commit ของ Lab 03 บน `main` (ดูล่าสุดด้วย `git log --oneline -6`):
+  `05f1d82` → `aa1ed26` → `c4eb6f4` → `5aa9aa7` → `292c96c` → commit อัปเดต README นี้
