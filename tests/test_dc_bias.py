@@ -5,6 +5,8 @@ from dc_bias import (
     REGION_CUTOFF,
     REGION_SATURATION,
     calculate,
+    calculate_fixed,
+    calculate_emitter,
 )
 
 REFERENCE = dict(
@@ -90,3 +92,41 @@ class TestRegions(unittest.TestCase):
         r = calculate(vcc=12.0, r1=100_000.0, r2=22_000.0, rc=2_200.0,
                       re=1_000.0, beta=100.5, vbe=0.70)
         self.assertGreater(r["ic"], 0.0)
+
+
+class TestFixedAndEmitter(unittest.TestCase):
+    def test_fixed_reference(self):
+        r = calculate_fixed(vcc=12.0, rb=1e6, rc=2200.0, beta=100.0, vbe=0.70)
+        self.assertAlmostEqual(r["ib"] * 1e6, 11.30, places=2)
+        self.assertAlmostEqual(r["ic"] * 1e3, 1.1300, places=3)
+        self.assertAlmostEqual(r["ve"], 0.0, places=6)
+        self.assertAlmostEqual(r["vb"], 0.70, places=6)
+        self.assertAlmostEqual(r["vc"], 9.5140, places=3)
+        self.assertAlmostEqual(r["vce"], 9.5140, places=3)
+        self.assertEqual(r["region"], REGION_ACTIVE)
+        self.assertEqual(r["warnings"], [])
+
+    def test_emitter_reference(self):
+        r = calculate_emitter(vcc=12.0, rb=1e6, rc=2200.0, re=1000.0,
+                              beta=100.0, vbe=0.70)
+        self.assertAlmostEqual(r["ic"] * 1e3, 1.0263, places=3)
+        self.assertAlmostEqual(r["ve"], 1.0366, places=3)
+        self.assertAlmostEqual(r["vb"], 1.7366, places=3)
+        self.assertAlmostEqual(r["vce"], 8.7054, places=3)
+
+    def test_larger_re_reduces_ic(self):
+        a = calculate_emitter(vcc=12.0, rb=1e6, rc=2200.0, re=1000.0,
+                              beta=100.0, vbe=0.70)
+        b = calculate_emitter(vcc=12.0, rb=1e6, rc=2200.0, re=2000.0,
+                              beta=100.0, vbe=0.70)
+        self.assertAlmostEqual(b["ic"] * 1e3, 0.9401, places=3)
+        self.assertLess(b["ic"], a["ic"])
+
+    def test_nonpositive_rb_rejected(self):
+        with self.assertRaises(ValueError):
+            calculate_fixed(vcc=12.0, rb=0.0, rc=2200.0, beta=100.0, vbe=0.70)
+
+    def test_nonpositive_re_rejected(self):
+        with self.assertRaises(ValueError):
+            calculate_emitter(vcc=12.0, rb=1e6, rc=2200.0, re=0.0,
+                              beta=100.0, vbe=0.70)
