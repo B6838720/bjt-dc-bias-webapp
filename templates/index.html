@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BJT DC Bias Calculator — {{ mode }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <title>BJT Amplifier Simulator v1 — {{ analyses[analysis] }}</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   {% set mode_name = {'divider': 'Voltage Divider Bias', 'fixed': 'Fixed Bias', 'emitter': 'Emitter Bias'}.get(mode, mode) %}
   <header class="hero">
-    <h1>BJT DC Bias Calculator</h1>
-    <p>Common-Emitter · {{ mode_name }} · Forward-Active Approximation</p>
+    <h1>BJT Amplifier Simulator v1</h1>
+    <p>ENG29 2121 · Lab 04 · DC Bias เดิมจาก Lab 3 + CE Voltage Divider จำลองด้วย <strong>ngspice</strong></p>
   </header>
 
   <main class="layout">
     <section class="panel">
-      <h2>ข้อมูลอินพุต</h2>
+      <h2>ข้อมูลอินพุต · DC Bias (Lab 3)</h2>
 
       <form class="mode-bar" method="get" action="/">
         <div class="field">
@@ -35,6 +35,7 @@
 
       <form method="post" action="/calculate">
         <input type="hidden" name="mode" value="{{ mode }}">
+        <input type="hidden" name="analysis" value="{{ analysis }}">
 
         <div class="field">
           <label for="vcc">VCC (V)</label>
@@ -132,6 +133,205 @@
         {% endif %}
       {% else %}
         <p class="muted">กรอกค่าแล้วกด “คำนวณ DC Bias” เพื่อดูผลลัพธ์ของ{{ mode_name }}</p>
+      {% endif %}
+    </section>
+
+    <section class="panel simulator">
+      <h2>CE Voltage Divider · Simulation Inputs</h2>
+      <p class="muted">
+        หน่วยในฟอร์ม: R เป็น kΩ · C เป็น µF · Amplitude เป็น mV · Tstep เป็น µs · Tstop เป็น ms
+        โปรแกรมแปลงเป็น SI ก่อนสร้าง netlist
+      </p>
+
+      {% if not model_config.configured and not sim_form.sim_model_text.strip() %}
+      <p class="warning inline">
+        ยังไม่พบ BJT model — ตั้ง <code>NGSPICE_MODEL_NAME</code> /
+        <code>NGSPICE_MODEL_FILE</code> หรือกรอกด้านล่างก่อนรันจริง
+      </p>
+      {% endif %}
+
+      <form method="post" action="/simulate">
+        <input type="hidden" name="mode" value="{{ mode }}">
+
+        <div class="sim-grid">
+          <div class="field">
+            <label for="analysis">Analysis Mode</label>
+            <select id="analysis" name="analysis">
+              {% for key, label in analyses.items() %}
+              <option value="{{ key }}" {% if analysis == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field"><label for="sim_vcc">VCC (V)</label><input type="number" step="any" id="sim_vcc" name="sim_vcc" value="{{ sim_form.sim_vcc }}" required></div>
+          <div class="field"><label for="sim_r1">R1 (kΩ)</label><input type="number" step="any" id="sim_r1" name="sim_r1" value="{{ sim_form.sim_r1 }}" required></div>
+          <div class="field"><label for="sim_r2">R2 (kΩ)</label><input type="number" step="any" id="sim_r2" name="sim_r2" value="{{ sim_form.sim_r2 }}" required></div>
+          <div class="field"><label for="sim_rc">RC (kΩ)</label><input type="number" step="any" id="sim_rc" name="sim_rc" value="{{ sim_form.sim_rc }}" required></div>
+          <div class="field"><label for="sim_re">RE (kΩ)</label><input type="number" step="any" id="sim_re" name="sim_re" value="{{ sim_form.sim_re }}" required></div>
+          <div class="field"><label for="sim_rl">RL (kΩ)</label><input type="number" step="any" id="sim_rl" name="sim_rl" value="{{ sim_form.sim_rl }}" required></div>
+          <div class="field"><label for="sim_cin">Cin (µF)</label><input type="number" step="any" id="sim_cin" name="sim_cin" value="{{ sim_form.sim_cin }}" required></div>
+          <div class="field"><label for="sim_cout">Cout (µF)</label><input type="number" step="any" id="sim_cout" name="sim_cout" value="{{ sim_form.sim_cout }}" required></div>
+          <div class="field"><label for="sim_amp">Amplitude (mV peak)</label><input type="number" step="any" id="sim_amp" name="sim_amp" value="{{ sim_form.sim_amp }}" required></div>
+          <div class="field"><label for="sim_freq">Frequency (Hz)</label><input type="number" step="any" id="sim_freq" name="sim_freq" value="{{ sim_form.sim_freq }}" required></div>
+          <div class="field"><label for="sim_beta">β reference</label><input type="number" step="any" id="sim_beta" name="sim_beta" value="{{ sim_form.sim_beta }}" required></div>
+          <div class="field"><label for="sim_vbe">VBE reference (V)</label><input type="number" step="any" id="sim_vbe" name="sim_vbe" value="{{ sim_form.sim_vbe }}" required></div>
+          <div class="field"><label for="sim_fstart">AC Fstart (Hz)</label><input type="number" step="any" id="sim_fstart" name="sim_fstart" value="{{ sim_form.sim_fstart }}" required></div>
+          <div class="field"><label for="sim_fstop">AC Fstop (Hz)</label><input type="number" step="any" id="sim_fstop" name="sim_fstop" value="{{ sim_form.sim_fstop }}" required></div>
+          <div class="field"><label for="sim_fpoints">AC points/decade</label><input type="number" step="1" id="sim_fpoints" name="sim_fpoints" value="{{ sim_form.sim_fpoints }}" required></div>
+          <div class="field"><label for="sim_tstep">Tstep (µs)</label><input type="number" step="any" id="sim_tstep" name="sim_tstep" value="{{ sim_form.sim_tstep }}" required></div>
+          <div class="field"><label for="sim_tstop">Tstop (ms)</label><input type="number" step="any" id="sim_tstop" name="sim_tstop" value="{{ sim_form.sim_tstop }}" required></div>
+        </div>
+
+        <fieldset class="model-box">
+          <legend>BJT Model · ngspice library / Starter Kit</legend>
+          <div class="field">
+            <label for="sim_model_name">Model name</label>
+            <input type="text" id="sim_model_name" name="sim_model_name" value="{{ sim_form.sim_model_name }}" placeholder="{{ model_config.name or 'เช่น QNPN' }}">
+          </div>
+          <div class="field model-text-field">
+            <label for="sim_model_text">Model card (.model ...)</label>
+            <textarea id="sim_model_text" name="sim_model_text" rows="3" placeholder="เว้นว่างเพื่อใช้ NGSPICE_MODEL_FILE / NGSPICE_MODEL_TEXT">{{ sim_form.sim_model_text }}</textarea>
+          </div>
+          <p class="muted small">แหล่งที่ configured: <code>{{ model_config.source }}</code></p>
+        </fieldset>
+
+        <button type="submit">Run Simulation · {{ analyses[analysis] }}</button>
+      </form>
+    </section>
+
+    <section class="panel simulator results-panel" aria-live="polite">
+      <h2>Engineering Results · {{ analyses[analysis] }}</h2>
+
+      {% if sim_error %}
+      <div class="error" role="alert"><strong>Simulation Error:</strong> {{ sim_error }}</div>
+      {% endif %}
+
+      {% if sim_result and not sim_error %}
+        <p class="badge ok">✓ {{ sim_result.engine }} · {{ sim_result.status }} · {{ sim_result.analysis_label }}</p>
+        <p class="muted small">
+          Model: <strong>{{ sim_result.model_name }}</strong> ·
+          source: {{ sim_result.model_source }} ·
+          provenance: {{ sim_result.provenance }}
+        </p>
+
+        {% if sim_result.analysis == 'dc' %}
+        <h3>DC Operating Point · SPICE</h3>
+        <dl class="results">
+          <div><dt>VB</dt><dd>{{ sim_result['values'].VB|voltage }}</dd></div>
+          <div><dt>VE</dt><dd>{{ sim_result['values'].VE|voltage }}</dd></div>
+          <div><dt>VC</dt><dd>{{ sim_result['values'].VC|voltage }}</dd></div>
+          <div><dt>VCE</dt><dd>{{ sim_result['values'].VCE|voltage }}</dd></div>
+          <div><dt>IC</dt><dd>{{ sim_result['values'].IC|current }}</dd></div>
+        </dl>
+        {% endif %}
+
+        {% if sim_result.analysis == 'ac' %}
+        <h3>AC Frequency Response · SPICE</h3>
+        <dl class="results">
+          <div><dt>Peak gain</dt><dd>{{ sim_result['values']['PeakGain_dB']|number('.2f') }} dB</dd></div>
+          <div><dt>Gain @ 1 kHz</dt><dd>{{ sim_result['values']['GainAt1k_dB']|number('.2f') }} dB</dd></div>
+          <div>
+            <dt>Phase @ 1 kHz</dt>
+            <dd>
+              {% if sim_result['values']['PhaseAt1k_deg'] is defined and sim_result['values']['PhaseAt1k_deg'] is not none %}
+                {{ sim_result['values']['PhaseAt1k_deg']|number('.1f') }} °
+              {% else %}
+                not determined in sweep range
+              {% endif %}
+            </dd>
+          </div>
+          <div>
+            <dt>−3 dB point</dt>
+            <dd>
+              {% if sim_result['values']['Cutoff_Hz'] is not none %}
+                {{ sim_result['values']['Cutoff_Hz']|number('.4g') }} Hz
+              {% else %}
+                not determined in sweep range
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+        <div class="charts">
+          <figure>
+            <figcaption>Gain magnitude · Frequency (Hz, log scale)</figcaption>
+            <svg class="chart" viewBox="0 0 640 230" role="img" aria-label="Bode gain plot from ngspice">
+              <line class="axis" x1="44" y1="20" x2="44" y2="200"></line>
+              <line class="axis" x1="44" y1="200" x2="616" y2="200"></line>
+              <polyline class="line-gain" points="{{ charts.gain.polyline }}"></polyline>
+            </svg>
+          </figure>
+          <figure>
+            <figcaption>Phase (°) · Frequency (Hz, log scale)</figcaption>
+            <svg class="chart" viewBox="0 0 640 230" role="img" aria-label="Bode phase plot from ngspice">
+              <line class="axis" x1="44" y1="20" x2="44" y2="200"></line>
+              <line class="axis" x1="44" y1="200" x2="616" y2="200"></line>
+              <polyline class="line-phase" points="{{ charts.phase.polyline }}"></polyline>
+            </svg>
+          </figure>
+        </div>
+        {% endif %}
+
+        {% if sim_result.analysis == 'transient' %}
+        <h3>Transient Response · SPICE</h3>
+        <dl class="results">
+          <div><dt>Vin peak</dt><dd>{{ sim_result['values']['VinPeak_V']|number('.4f') }} V</dd></div>
+          <div><dt>Vout peak</dt><dd>{{ sim_result['values']['VoutPeak_V']|number('.4f') }} V</dd></div>
+          <div><dt>Time end</dt><dd>{{ sim_result['values']['TimeEnd_s']|number('.5f') }} s</dd></div>
+          <div><dt>Phase relation</dt><dd>{{ sim_result['values']['PhaseRelation'] }}</dd></div>
+        </dl>
+        <figure>
+          <figcaption>
+            Vin <span class="legend-dot vin"></span> / Vout <span class="legend-dot vout"></span> · Time (ms)
+          </figcaption>
+          <svg class="chart wide" viewBox="0 0 640 230" role="img" aria-label="Vin and Vout waveforms from ngspice">
+            <line class="axis" x1="44" y1="20" x2="44" y2="200"></line>
+            <line class="axis" x1="44" y1="200" x2="616" y2="200"></line>
+            <polyline class="line-vin" points="{{ charts.wave.vin }}"></polyline>
+            <polyline class="line-vout" points="{{ charts.wave.vout }}"></polyline>
+          </svg>
+        </figure>
+        {% endif %}
+
+        {% if sim_result.warnings %}
+        <ul class="warning">
+          {% for message in sim_result.warnings %}<li>{{ message }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        <details>
+          <summary>วิธีได้มาซึ่งตัวเลข / Derivation</summary>
+          <ul>
+            {% for message in sim_result.derived %}<li>{{ message }}</li>{% endfor %}
+          </ul>
+        </details>
+
+        <details>
+          <summary>Netlist ที่ส่งให้ ngspice</summary>
+          <pre>{{ sim_result.netlist }}</pre>
+        </details>
+
+        <details>
+          <summary>ngspice log excerpt</summary>
+          <pre>{{ sim_result.log_excerpt }}</pre>
+        </details>
+      {% else %}
+        <p class="muted">เลือก Analysis Mode แล้วกด “Run Simulation” เพื่อดูผลจาก ngspice จริง</p>
+      {% endif %}
+
+      {% if analytical %}
+      <div class="reference">
+        <h3>Analytical Reference · Lab 3 (ไม่ใช่ผล SPICE)</h3>
+        <p class="muted small">
+          สมการ forward-active ที่ β และ VBE คงที่ ใช้เปรียบเทียบเท่านั้น
+          ตัวเลขอาจต่างจาก BJT model ของ ngspice
+        </p>
+        <dl class="results small">
+          <div><dt>VB</dt><dd>{{ analytical.vb|voltage }}</dd></div>
+          <div><dt>VE</dt><dd>{{ analytical.ve|voltage }}</dd></div>
+          <div><dt>VC</dt><dd>{{ analytical.vc|voltage }}</dd></div>
+          <div><dt>VCE</dt><dd>{{ analytical.vce|voltage }}</dd></div>
+          <div><dt>IC</dt><dd>{{ analytical.ic|current }}</dd></div>
+        </dl>
+      </div>
       {% endif %}
     </section>
   </main>

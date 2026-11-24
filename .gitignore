@@ -12,3 +12,8 @@ Thumbs.db
 
 # Superpowers execution workspace (scratch, never committed)
 .superpowers/
+
+# Lab 04 — ngspice run artifacts (regenerable)
+*.raw
+*.cir
+runs/

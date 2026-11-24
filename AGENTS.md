@@ -5,14 +5,19 @@
 
 ---
 
-## 1. ขอบเขต (ห้ามขยายเอง)
+## 1. ขอบเขตปัจจุบัน (Lab 04)
 
-โปรเจกต์นี้เป็น **Lab 02 — DC Bias เท่านั้น**
+โปรเจกต์นี้คือ **Lab 04 — BJT Amplifier Simulator v1** (ต่อยอดจาก Lab 03)
 
-- ✅ คำนวณ `VTH, RTH, IB, IC, IE, VB, VE, VC, VCE` และตรวจ region
-- ❌ **ห้ามเพิ่ม** AC analysis, Bode plot, Transient simulation, Signal Generator,
-  Overlay animation, SPICE solver หรือ dependency ใหม่ที่ไม่ได้อยู่ใน `requirements.txt`
-- ถ้าผู้ใช้ขอ feature นอกขอบเขต ให้ถามยืนยันก่อนเสมอ
+- ✅ คง DC Bias 3 แบบ `divider / fixed / emitter` และผล A1–A5 ไว้เหมือนเดิม
+- ✅ เพิ่มวงจร CE Voltage Divider อ้างอิง **หนึ่งวงจร** สำหรับจำลองจริง
+- ✅ เชื่อม `ngspice` ผ่าน `spice_engine.py` เพื่อรัน `.op`, `.ac`, `.tran`
+- ✅ ผลทุกชุดต้องมี engine status, model, unit และ provenance ว่ามาจาก SPICE หรือ Analytical
+- ✅ Impeccable ปรับเฉพาะไฟล์ UI; Playwright MCP ตรวจ B1–B8 จาก browser จริง
+- ❌ ห้ามลบ/เปลี่ยน signature ของ `dc_bias.calculate()`, `calculate_fixed()`, `calculate_emitter()`
+- ❌ ห้ามทำ circuit editor อิสระ, FET, deploy ภายนอก, หรือใส่กราฟ/ค่าสำเร็จรูปแทนผลรันจริง
+- ❌ ห้ามเดาค่า BJT model — ใช้ Starter Kit ถ้ามี; กรณีนี้ใช้โมเดลจาก ngspice source repo พร้อม provenance ตามที่ผู้ใช้เลือกข้อ 2
+- ถ้าจะเพิ่ม dependency ใหม่ ต้องอัปเดต `requirements.txt` และ `README.md` ด้วย
 
 ---
 
@@ -20,13 +25,15 @@
 
 | ไฟล์ | ทำได้ | ห้ามทำ |
 |---|---|---|
-| `dc_bias.py` | สมการ, validation, region detection, warning | **ห้าม import `flask`**, ห้ามรู้จัก HTTP/form/HTML |
-| `app.py` | routes, parsing string→float, formatting, template context | **ห้ามมีสมการฟิสิกส์** |
-| `templates/index.html` | แสดงผล, ฟอร์ม, loop, if | **ห้ามมีสมการฟิสิกส์**, ห้ามคำนวณค่าทางวิศวกรรม |
+| `dc_bias.py` | สมการ Analytical DC, validation, region detection, warning | **ห้าม import `flask`**, ห้ามรู้จัก HTTP/form/HTML |
+| `spice_engine.py` | สร้าง netlist, เรียก ngspice, parse ผล, แจ้ง error | **ห้าม import `flask`**, ห้าม CREATE mock trace/current/gain |
+| `app.py` | routes, parsing string→float, dispatch ไป engine/reference, formatting, template context | **ห้ามมีสมการฟิสิกส์หรือ netlist** |
+| `templates/index.html` | แสดงผล, ฟอร์ม, loop, if, SVG path ที่สร้างจากข้อมูลจริง | **ห้ามมีสมการฟิสิกส์**, ห้ามคำนวณค่าทางวิศวกรรม |
 | `static/style.css` | การจัดหน้า, responsive | ห้ามใส่ logic |
-| `tests/` | unit + HTTP tests | ห้ามใส่ production logic |
+| `tests/` | unit + HTTP tests (อาจใช้ fake runner แทน ngspice จริง) | ห้ามใส่ production logic |
 
-**เหตุผล:** ถ้าย้ายสมการไป HTML หรือ `app.py` จะทดสอบไม่ได้และผิดเกณฑ์ใบงาน
+**เหตุผล:** ถ้าย้ายสมการหรือ netlist ไป HTML/`app.py` จะทดสอบไม่ได้และผิดเกณฑ์ใบงาน  
+**Lab 04 เพิ่ม:** `app.py` dispatch ได้ แต่ต้องแยกป้ายผล `SPICE (ngspice)` กับ `Analytical (Lab 3)` เสมอ
 
 ---
 
@@ -72,7 +79,7 @@ calculate(vcc, r1, r2, rc, re, beta, vbe) -> dict
 python -m unittest discover -s tests -v
 ```
 
-ต้องได้ **16 tests, OK** (หรือมากกว่า ถ้าเพิ่ม test ใหม่)
+ต้องได้อย่างน้อย **29 tests, OK** (15 unit + 14 HTTP จาก Lab 03; ต้องผ่านก่อนเพิ่มงาน Lab 04)
 
 ตรวจว่าไม่มีไฟล์ขยะติดไป:
 
@@ -94,7 +101,19 @@ git status --short
 
 ---
 
-## 7. เอกสารที่ต้องอัปเดตเมื่อพฤติกรรมเปลี่ยน
+## 7. กติกาเพิ่มเติมสำหรับผลจำลอง Lab 04
+
+- ต้องเรียก `ngspice` ด้วย `subprocess.run([...])`, มี `timeout`, ไม่ใช้ `shell=True`
+- ต้องใช้ working directory แยกต่อรอบ (เช่น `TemporaryDirectory`) และเก็บ netlist/log ของรอบนั้น
+- ถ้า engine ไม่พบ, run fail, log ว่าง, หรือ parse ไม่ได้ → คืน error ห้ามโชว์ result เก่าหรือ status Success
+- ห้าม hard-code gain, cutoff frequency, waveform หรือตัวเลข DC ลงใน template/code แล้วอ้างว่าเป็นผล ngspice
+- ถ้าหา -3 dB ไม่เจอในช่วง sweep ให้ระบุ `not determined in sweep range`
+- ค่าที่คำนวณต่อจาก node voltage ของ SPICE (เช่น IC จาก `(VCC-VC)/RC`) ต้องบอกวิธีderive ให้ชัด
+- ผล `dc_bias.py` เป็น analytical reference อย่างเดียว ห้ามรวมกับผล SPICE เป็นตารางเดียวแบบไม่มีป้ายกำกับ
+
+---
+
+## 8. เอกสารที่ต้องอัปเดตเมื่อพฤติกรรมเปลี่ยน
 
 - `README.md` — ถ้าเปลี่ยนวิธีติดตั้ง/รัน หรือสมการ
 - `docs/validation.md` — ถ้าเปลี่ยนค่าอ้างอิงหรือผล test
