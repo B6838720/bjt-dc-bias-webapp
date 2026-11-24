@@ -267,6 +267,26 @@ ngspice -b -o <run.log> <circuit.cir>
 - เมื่อ engine fail หน้าเว็บแสดง `Simulation Error` และไม่โชว์ badge Success หรือค่าจากรอบก่อน
 - `ngspice.exe` เป็น GUI และอาจ hang → ใช้ `ngspice_con.exe` เสมอ
 
+### 8.6 สรุปการตั้งค่าและผลที่ใช้ตรวจรับ (Publish Evidence)
+
+| รายการ | ค่าที่ใช้จริง / ผลที่ได้ |
+|---|---|
+| `NGSPICE_EXECUTABLE` | `ngspice_con.exe` (console build); ใช้ path ของเครื่องผู้ตรวจ เช่น `C:\path\to\ngspice_con.exe` **ห้ามใช้ `ngspice.exe`** |
+| `NGSPICE_MODEL_NAME` | `PN2222` |
+| `NGSPICE_MODEL_FILE` | `$PWD\models\ngspice\PN2222.mod` |
+| ngspice version | `ngspice-41` (conda-forge `ngspice-exe=41 h295a5eb_0`) |
+| model provenance | ngspice source repo `examples/tclspice/tcl-testbench1/PN2222.mod`, commit `032b1c32...`, blob `d683d374...`; ไม่ใช่ Starter Kit |
+| Test | `python -m unittest discover -s tests -v` → **52 tests, OK** |
+| B1 Regression | Divider `IC 1.230 mA / VCE 8.052 V`; Fixed `1.130 mA / 9.514 V`; Emitter `1.026 mA / 8.705 V` |
+| B2 DC SPICE | `VB 2.016 V, VE 1.364 V, VC 9.017 V, VCE 7.653 V, IC 1.356 mA` |
+| B3 เปลี่ยน RE `1→2 kΩ` | `IC 1.356 mA → 718.93 µA`, `VCE 7.653 → 8.971 V`; netlist `RE emitter 0 2000` |
+| B4 AC | `Gain @ 1 kHz 4.90 dB`, `Phase @ 1 kHz -179.9 °`, `−3 dB 1.78 Hz`, 141 points |
+| B5 Transient | `Vin 0.0100 V`, `Vout 0.0176 V`, `Tend 0.005 s`, `inverted`, 295 points |
+| B6 เปลี่ยน source | `20 mV / 500 Hz` → netlist `SIN(0 0.02 500)`, `Vin 0.0200 V`, `Vout 0.0353 V` |
+| B7 Error | `RE=0` → `Simulation Error` และไม่มี badge `success` / ค่าค้าง |
+| B8 UI | screenshot ก่อน/หลัง + รายเคสอยู่ใน `docs/evidence/lab04-before/` และ `docs/evidence/lab04-after/b1-b8/` |
+| Repo / feature SHA | <https://github.com/B6838720/bjt-dc-bias-webapp> · `1314f8c8c1d9f56dbcb9cccf8b8bffb1d1aef96c` |
+
 ---
 
 ## 9. เอกสารเพิ่มเติม
@@ -281,6 +301,7 @@ ngspice -b -o <run.log> <circuit.cir>
 - `docs/evidence/lab04-before/` / `docs/evidence/lab04-after/` — screenshot Desktop/Mobile ก่อน–หลัง Impeccable
 - `docs/evidence/lab04-after/ac-real-ngspice*.png` — Bode plot จริงจาก `.ac`
 - `docs/evidence/lab04-after/tran-real-ngspice.png` — waveform จริงจาก `.tran`
+- `docs/evidence/lab04-after/b1-b8/` — screenshot รายเคส B1–B8 หลังตรวจรับจริง
 - `docs/superpowers/specs/2026-11-10-bjt-dc-bias-webapp-design.md` — design Lab 2 ฉบับเต็ม
 - `docs/superpowers/specs/2026-11-17-lab03-three-bias-modes-design.md` — design note Lab 03
 - `docs/superpowers/plans/2026-11-17-lab03-three-bias-modes.md` — plan Lab 03
