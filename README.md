@@ -286,12 +286,31 @@ ngspice -b -o <run.log> <circuit.cir>
 
 ---
 
-## 10. ที่มาและ Commit ของ Lab 03
+## 10. ที่มา Commit และการทดลองทำซ้ำ
 
 - Repository: <https://github.com/B6838720/bjt-dc-bias-webapp>
-- วิธีตรวจซ้ำ: รันตามข้อ 3 → เปิดเว็บ → เลือกโหมด → กรอกค่าตามตารางข้อ 1 → กด `คำนวณ DC Bias`
-- ผลจริงจาก Browser (A1–A5 ผ่านทั้ง 5 กรณี) อยู่ใน `docs/validation.md` ข้อ 9
-- ประวัติ Commit ของ Lab 03 บน `main` (ดูล่าสุดด้วย `git log --oneline -6`):
-  `05f1d82` → `aa1ed26` → `c4eb6f4` → `5aa9aa7` → `292c96c` → commit อัปเดต README นี้
+- **Feature commit ของ Lab 04:** `1314f8c8c1d9f56dbcb9cccf8b8bffb1d1aef96c`
 - **Baseline Lab 03 สำหรับ regression Lab 04:** `469f1ac6c2621ca930d6e44fb2c77fd2c5bd4efb`
-- Commit ของ Lab 04: ดูด้วย `git rev-parse HEAD` หลัง clone (SHA ถูกต้องเสมอจากประวัติจริง)
+- ผลจริง A1–A5 อยู่ใน `docs/validation.md` ข้อ 9; ผลจริง B1–B8 อยู่ในข้อ 11
+
+### 10.1 ทำซ้ำ Lab 04 (SPICE จริง)
+
+```powershell
+git clone https://github.com/B6838720/bjt-dc-bias-webapp.git
+cd bjt-dc-bias-webapp
+git checkout 1314f8c8c1d9f56dbcb9cccf8b8bffb1d1aef96c
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+$env:NGSPICE_EXECUTABLE = "C:\path\to\ngspice_con.exe"
+$env:NGSPICE_MODEL_NAME  = "PN2222"
+$env:NGSPICE_MODEL_FILE  = "$PWD\models\ngspice\PN2222.mod"
+python -m flask --app app run --host 127.0.0.1 --port 5000
+```
+
+จากนั้นเปิด <http://127.0.0.1:5000/> แล้วทำตามลำดับ B1–B8 ใน `docs/validation.md` ข้อ 11.2
+(โดยเฉพาะ B2 DC, B4 AC, B5 Transient, B6 เปลี่ยน amplitude/frequency และ B7 `RE=0`)
+
+- `ngspice.exe` เป็น GUI และอาจ hang → ใช้ `ngspice_con.exe` เสมอ
+- model `PN2222` มาจาก ngspice source repo พร้อม provenance ใน `models/ngspice/SOURCE.md` (ไม่ใช่ Starter Kit)
