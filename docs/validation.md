@@ -352,3 +352,4 @@ Index   time            v(input)        v(output)
 - `docs/evidence/lab04-after/ac-real-ngspice.png` — Bode gain + phase และตารางเทียบ Analytical
 - `docs/evidence/lab04-after/ac-real-ngspice-390.png` — กราฟ AC แบบแคบ
 - `docs/evidence/lab04-after/tran-real-ngspice.png` — waveform Vin/Vout จริงจาก `.tran`
+- `docs/evidence/lab04-after/b1-b8/` — screenshot รายเคสหลังตรวจรับ: `b1-divider/fixed/emitter`, `b2-dc-spice`, `b3-re-2k`, `b4-ac-spice`, `b5-tran-spice`, `b6-source-changed`, `b7-invalid-re`, `b8-desktop/mobile`
