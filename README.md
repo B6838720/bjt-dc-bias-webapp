@@ -273,6 +273,7 @@ ngspice -b -o <run.log> <circuit.cir>
 
 - `docs/design-note.md` — สถาปัตยกรรมและเหตุผลการแยกชั้น (Lab 2)
 - `docs/validation.md` — ข้อ 2–8: หลักฐาน Lab 2 (A1–A7); **ข้อ 9: ตาราง A1–A5 ของ Lab 03**; **ข้อ 10: คำถามปิด Lab**; **ข้อ 11: ตาราง B1–B8 ของ Lab 04**
+- `docs/lab04-reflection.md` — คำตอบคำถามสั้น 5 ข้อสำหรับตรวจรายบุคคล Lab 04
 - `docs/reflection.md` — คำตอบคำถามรายบุคคลในใบงาน (Lab 2)
 - `docs/lab03-baseline.md` — ผล Voltage Divider ก่อนเพิ่ม 2 โหมด (baseline Lab 03)
 - `docs/evidence/lab03-a5-fixed-rb0.jpeg` — หลักฐานหน้าเว็บกรณี A5 (RB=0)
